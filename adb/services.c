@@ -62,7 +62,7 @@ void restart_root_service(int fd, void *cookie)
     char buf[100];
     char value[PROPERTY_VALUE_MAX];
     char build_type[PROPERTY_VALUE_MAX];
-    char epic.version[PROPERTY_VALUE_MAX];
+    char epicos.version[PROPERTY_VALUE_MAX];
 
     if (getuid() == 0) {
         snprintf(buf, sizeof(buf), "adbd is already running as root\n");
@@ -79,7 +79,7 @@ void restart_root_service(int fd, void *cookie)
 
         property_get("persist.sys.root_access", value, "0");
         property_get("ro.build.type", build_type, "");
-        property_get("ro.epic-os.version", epic.version, "");
+        property_get("ro.epic-os.version", epicos.version, "");
 
         if (strlen(epic.version) > 0 && strcmp(build_type, "eng") != 0 && (atoi(value) & 2) != 2) {
             snprintf(buf, sizeof(buf), "root access is disabled by system setting - enable in settings -> development options\n");
