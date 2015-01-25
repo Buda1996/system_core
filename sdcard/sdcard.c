@@ -1,21 +1,4 @@
-/*
- * Copyright (C) 2010 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 #define LOG_TAG "sdcard"
-
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
@@ -35,61 +18,11 @@
 #include <sys/time.h>
 #include <sys/uio.h>
 #include <unistd.h>
-
 #include <cutils/fs.h>
 #include <cutils/hashmap.h>
 #include <cutils/log.h>
 #include <cutils/multiuser.h>
-
 #include <private/android_filesystem_config.h>
-
-/* README
- *
- * What is this?
- *
- * sdcard is a program that uses FUSE to emulate FAT-on-sdcard style
- * directory permissions (all files are given fixed owner, group, and
- * permissions at creation, owner, group, and permissions are not
- * changeable, symlinks and hardlinks are not createable, etc.
- *
- * See usage() for command line options.
- *
- * It must be run as root, but will drop to requested UID/GID as soon as it
- * mounts a filesystem.  It will refuse to run if requested UID/GID are zero.
- *
- * Things I believe to be true:
- *
- * - ops that return a fuse_entry (LOOKUP, MKNOD, MKDIR, LINK, SYMLINK,
- * CREAT) must bump that node's refcount
- * - don't forget that FORGET can forget multiple references (req->nlookup)
- * - if an op that returns a fuse_entry fails writing the reply to the
- * kernel, you must rollback the refcount to reflect the reference the
- * kernel did not actually acquire
- *
- * This daemon can also derive custom filesystem permissions based on directory
- * structure when requested. These custom permissions support several features:
- *
- * - Apps can access their own files in /Android/data/com.example/ without
- * requiring any additional GIDs.
- * - Separate permissions for protecting directories like Pictures and Music.
- * - Multi-user separation on the same physical device.
- *
- * The derived permissions look like this:
- *
- * rwxrwx--x root:sdcard_rw     /
- * rwxrwx--- root:sdcard_pics   /Pictures
- * rwxrwx--- root:sdcard_av     /Music
- *
- * rwxrwx--x root:sdcard_rw     /Android
- * rwxrwx--x root:sdcard_rw     /Android/data
- * rwxrwx--- u0_a12:sdcard_rw   /Android/data/com.example
- * rwxrwx--x root:sdcard_rw     /Android/obb/
- * rwxrwx--- u0_a12:sdcard_rw   /Android/obb/com.example
- *
- * rwxrwx--- root:sdcard_all    /Android/user
- * rwxrwx--x root:sdcard_rw     /Android/user/10
- * rwxrwx--- u10_a12:sdcard_rw  /Android/user/10/Android/data/com.example
- */
 
 #define FUSE_TRACE 0
 
@@ -102,33 +35,15 @@
 #define ERROR(x...) ALOGE(x)
 
 #define FUSE_UNKNOWN_INO 0xffffffff
-
-/* Maximum number of bytes to write in one request. */
-#define MAX_WRITE (256 * 1024)
-
-/* Maximum number of bytes to read in one request. */
-#define MAX_READ (128 * 1024)
-
-/* Largest possible request.
- * The request size is bounded by the maximum size of a FUSE_WRITE request because it has
- * the largest possible data payload. */
+#define MAX_WRITE (4096 * 1024)
+#define MAX_READ (4096 * 1024)
 #define MAX_REQUEST_SIZE (sizeof(struct fuse_in_header) + sizeof(struct fuse_write_in) + MAX_WRITE)
-
-/* Default number of threads. */
-#define DEFAULT_NUM_THREADS 2
-
-/* Pseudo-error constant used to indicate that no fuse status is needed
- * or that a reply has already been written. */
+#define DEFAULT_NUM_THREADS 3
 #define NO_STATUS 1
 
-/* Path to system-provided mapping of package name to appIds */
 static const char* const kPackagesListFile = "/data/system/packages.list";
-
-/* Supplementary groups to execute with */
 static const gid_t kGroups[1] = { AID_PACKAGE_INFO };
 
-/* Permission mode for a specific node. Controls how file permissions
- * are derived for children nodes. */
 typedef enum {
     /* Nothing special; this node should just inherit from its parent. */
     PERM_INHERIT,
@@ -341,14 +256,6 @@ static ssize_t get_node_path_locked(struct node* node, char* buf, size_t bufsize
     return pathlen + namelen;
 }
 
-/* Finds the absolute path of a file within a given directory.
- * Performs a case-insensitive search for the file and sets the buffer to the path
- * of the first matching file.  If 'search' is zero or if no match is found, sets
- * the buffer to the path that the file would have, assuming the name were case-sensitive.
- *
- * Populates 'buf' with the path and returns the actual name (within 'buf') on success,
- * or returns NULL if the path is too long for the provided buffer.
- */
 static char* find_file_within(const char* path, const char* name,
         char* buf, size_t bufsize, int search)
 {
@@ -1939,4 +1846,4 @@ int sdcard_main(int argc, char **argv)
 
     res = run(source_path, dest_path, uid, gid, write_gid, num_threads, derive, split_perms);
     return res < 0 ? 1 : 0;
-}
+} 
