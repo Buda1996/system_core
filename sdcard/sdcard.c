@@ -810,23 +810,15 @@ static int handle_setattr(struct fuse* fuse, struct fuse_handler* handler,
     if (!node) {
         return -ENOENT;
     }
-    if (!check_caller_access_to_node(fuse, hdr, node, W_OK, has_rw)) {
+    if (!(req->valid & FATTR_FH) &&
+	    !check_caller_access_to_node(fuse, hdr, node, W_OK, has_rw)) {
         return -EACCES;
     }
-
-    /* XXX: incomplete implementation on purpose.
-     * chmod/chown should NEVER be implemented.*/
 
     if ((req->valid & FATTR_SIZE) && truncate64(path, req->size) < 0) {
         return -errno;
     }
 
-    /* Handle changing atime and mtime.  If FATTR_ATIME_and FATTR_ATIME_NOW
-     * are both set, then set it to the current time.  Else, set it to the
-     * time specified in the request.  Same goes for mtime.  Use utimensat(2)
-     * as it allows ATIME and MTIME to be changed independently, and has
-     * nanosecond resolution which fuse also has.
-     */
     if (req->valid & (FATTR_ATIME | FATTR_MTIME)) {
         times[0].tv_nsec = UTIME_OMIT;
         times[1].tv_nsec = UTIME_OMIT;
