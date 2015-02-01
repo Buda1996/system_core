@@ -36,9 +36,9 @@
 
 #define FUSE_UNKNOWN_INO 0xffffffff
 #define MAX_WRITE (4096 * 1024)
-#define MAX_READ (4096 * 1024)
+#define MAX_READ (2048 * 1024)
 #define MAX_REQUEST_SIZE (sizeof(struct fuse_in_header) + sizeof(struct fuse_write_in) + MAX_WRITE)
-#define DEFAULT_NUM_THREADS 3
+#define DEFAULT_NUM_THREADS 2
 #define NO_STATUS 1
 
 static const char* const kPackagesListFile = "/data/system/packages.list";
